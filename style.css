@@ -1,6 +1,31 @@
 body{
-    margin:0;
-    overflow:hidden;
-    background:black;
-    font-family:Arial;
+  margin:0;
+  overflow:hidden;
+  background:black;
+  font-family:Arial;
+  color:#0ff;
+}
+
+#menu{
+  position:absolute;
+  width:100%;
+  top:40%;
+  text-align:center;
+}
+
+button{
+  padding:10px 20px;
+  font-size:20px;
+  background:black;
+  color:cyan;
+  border:1px solid cyan;
+  cursor:pointer;
+}
+
+#hud{
+  position:absolute;
+  top:10px;
+  left:10px;
+  color:white;
+  display:none;
 }

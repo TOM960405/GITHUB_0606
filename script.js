@@ -1,219 +1,164 @@
+let state = "menu";
+
 let player;
-let zombies = [];
+let enemies = [];
 let bullets = [];
-let items = [];
 
 let hp = 100;
-let startTime;
-let gameState = "start";
-let cooldown = 0;
+let score = 0;
 
-function setup(){
-    createCanvas(windowWidth, windowHeight);
+let shake = 0;
 
-    player = {
-        x: width/2,
-        y: height/2,
-        size: 30,
-        speed: 5
-    };
+// ===== START GAME =====
+function startGame(){
+
+  document.getElementById("menu").style.display = "none";
+  document.getElementById("hud").style.display = "block";
+
+  createCanvas(windowWidth, windowHeight);
+
+  player = {
+    x: width/2,
+    y: height/2,
+    speed: 5
+  };
+
+  state = "play";
 }
 
+// ===== MAIN LOOP =====
 function draw(){
 
-    background(10);
+  background(0);
 
-    // 星空效果（質感）
-    for(let i=0;i<50;i++){
-        stroke(255,50);
-        point(random(width), random(height));
-    }
+  if(state !== "play") return;
 
-    if(gameState === "start"){
-        drawStart();
-        return;
-    }
+  applyShake();
 
-    if(gameState === "gameover"){
-        drawGameOver();
-        return;
-    }
+  movePlayer();
+  drawPlayer();
 
-    game();
+  spawnEnemies();
+  updateEnemies();
+
+  updateBullets();
+
+  drawUI();
+
+  if(hp <= 0){
+    state = "gameover";
+    alert("GAME OVER! Score: " + score);
+    location.reload();
+  }
 }
 
-function drawStart(){
-    fill(255);
-    textAlign(CENTER);
-    textSize(40);
-    text("🧟 Zombie Survival PRO", width/2, height/2-50);
-
-    textSize(20);
-    text("Click to Start", width/2, height/2+20);
-}
-
-function drawGameOver(){
-    fill(255,0,0);
-    textAlign(CENTER);
-    textSize(50);
-    text("GAME OVER", width/2, height/2);
-
-    textSize(25);
-    text("Survive: " + floor((millis()-startTime)/1000) + "s",
-        width/2, height/2+60);
-}
-
-function game(){
-
-    movePlayer();
-
-    // 玩家
-    fill(0,150,255);
-    circle(player.x, player.y, player.size);
-
-    // 血條（高級感）
-    drawHP();
-
-    // 冷卻條
-    cooldown--;
-
-    // 生成殭屍
-    if(frameCount % 50 === 0){
-        spawnZombie();
-    }
-
-    // 掉補血包
-    if(frameCount % 300 === 0){
-        spawnItem();
-    }
-
-    updateZombies();
-    updateBullets();
-    updateItems();
-
-    drawUI();
-
-    if(hp <= 0){
-        gameState = "gameover";
-    }
-}
-
+// ===== PLAYER =====
 function movePlayer(){
-    if(keyIsDown(65)) player.x -= player.speed;
-    if(keyIsDown(68)) player.x += player.speed;
-    if(keyIsDown(87)) player.y -= player.speed;
-    if(keyIsDown(83)) player.y += player.speed;
+
+  if(keyIsDown(65)) player.x -= player.speed;
+  if(keyIsDown(68)) player.x += player.speed;
+  if(keyIsDown(87)) player.y -= player.speed;
+  if(keyIsDown(83)) player.y += player.speed;
 }
 
-function spawnZombie(){
-    zombies.push({
-        x: random(width),
-        y: 0,
-        speed: random(1,2)
+function drawPlayer(){
+  fill(0,255,255);
+  circle(player.x, player.y, 25);
+}
+
+// ===== ENEMIES =====
+function spawnEnemies(){
+  if(frameCount % 40 === 0){
+    enemies.push({
+      x: random(width),
+      y: 0,
+      speed: 2
     });
+  }
 }
 
-function spawnItem(){
-    items.push({
-        x: random(width),
-        y: random(height),
-        type: "heal"
-    });
-}
+function updateEnemies(){
 
-function updateZombies(){
+  for(let e of enemies){
 
-    for(let i=zombies.length-1;i>=0;i--){
-        let z = zombies[i];
+    let dx = player.x - e.x;
+    let dy = player.y - e.y;
+    let d = sqrt(dx*dx + dy*dy);
 
-        let dx = player.x - z.x;
-        let dy = player.y - z.y;
-        let d = sqrt(dx*dx+dy*dy);
+    e.x += dx/d * e.speed;
+    e.y += dy/d * e.speed;
 
-        z.x += dx/d * z.speed;
-        z.y += dy/d * z.speed;
+    fill(0,255,0);
+    circle(e.x, e.y, 25);
 
-        fill(0,200,0);
-        circle(z.x, z.y, 25);
-
-        if(dist(player.x,player.y,z.x,z.y)<20){
-            hp -= 1;
-        }
+    if(dist(e.x,e.y,player.x,player.y) < 20){
+      hp -= 1;
+      shake = 5;
     }
+  }
 }
 
-function updateBullets(){
-
-    for(let i=bullets.length-1;i>=0;i--){
-        let b = bullets[i];
-
-        b.x += b.dx;
-        b.y += b.dy;
-
-        fill(255,255,0);
-        circle(b.x,b.y,8);
-
-        for(let j=zombies.length-1;j>=0;j--){
-            if(dist(b.x,b.y,zombies[j].x,zombies[j].y)<20){
-                zombies.splice(j,1);
-                bullets.splice(i,1);
-                break;
-            }
-        }
-    }
-}
-
-function updateItems(){
-
-    for(let i=items.length-1;i>=0;i--){
-        let it = items[i];
-
-        fill(0,255,0);
-        rect(it.x,it.y,15,15);
-
-        if(dist(player.x,player.y,it.x,it.y)<20){
-            hp = min(100, hp + 20);
-            items.splice(i,1);
-        }
-    }
-}
-
-function drawHP(){
-    fill(255);
-    rect(20,20,100,10);
-
-    fill(255,0,0);
-    rect(20,20,hp,10);
-}
-
-function drawUI(){
-    fill(255);
-    textSize(20);
-    text("Time: " + floor((millis()-startTime)/1000), 20, 70);
-}
-
+// ===== SHOOT =====
 function mousePressed(){
 
-    if(gameState === "start"){
-        gameState = "play";
-        startTime = millis();
-        return;
-    }
+  if(state !== "play") return;
 
-    if(cooldown > 0) return;
+  let a = atan2(mouseY-player.y, mouseX-player.x);
 
-    let angle = atan2(mouseY-player.y, mouseX-player.x);
-
-    bullets.push({
-        x: player.x,
-        y: player.y,
-        dx: cos(angle)*10,
-        dy: sin(angle)*10
-    });
-
-    cooldown = 10;
+  bullets.push({
+    x: player.x,
+    y: player.y,
+    dx: cos(a)*12,
+    dy: sin(a)*12
+  });
 }
 
+// ===== BULLETS =====
+function updateBullets(){
+
+  for(let i=bullets.length-1;i>=0;i--){
+
+    let b = bullets[i];
+
+    b.x += b.dx;
+    b.y += b.dy;
+
+    fill(255,255,0);
+    circle(b.x,b.y,6);
+
+    for(let j=enemies.length-1;j>=0;j--){
+
+      if(dist(b.x,b.y,enemies[j].x,enemies[j].y)<20){
+
+        enemies.splice(j,1);
+        bullets.splice(i,1);
+
+        score++;
+        shake = 3;
+
+        break;
+      }
+    }
+  }
+}
+
+// ===== UI =====
+function drawUI(){
+
+  document.getElementById("hp").innerText = "HP: " + hp;
+  document.getElementById("score").innerText = "Score: " + score;
+}
+
+// ===== SHAKE =====
+function applyShake(){
+
+  if(shake > 0){
+    translate(random(-shake,shake), random(-shake,shake));
+    shake *= 0.85;
+  }
+}
+
+// ===== WINDOW =====
 function windowResized(){
-    resizeCanvas(windowWidth, windowHeight);
+  resizeCanvas(windowWidth, windowHeight);
 }
