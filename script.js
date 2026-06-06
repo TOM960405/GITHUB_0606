@@ -1,21 +1,29 @@
-let state = "menu";
+let state = "loading";
 
 let player;
 let enemies = [];
 let bullets = [];
+let particles = [];
 
 let hp = 100;
 let score = 0;
 
 let shake = 0;
+let hitStop = 0;
+window.onload = () => {
 
-// ===== START GAME =====
+  let bar = document.getElementById("bar");
+  bar.style.width = "100%";
+
+  setTimeout(() => {
+    document.getElementById("loading").style.display = "none";
+    document.getElementById("menu").style.display = "block";
+    state = "menu";
+  }, 1200);
+};
 function startGame(){
 
   document.getElementById("menu").style.display = "none";
-  document.getElementById("hud").style.display = "block";
-
-  createCanvas(windowWidth, windowHeight);
 
   player = {
     x: width/2,
@@ -23,10 +31,10 @@ function startGame(){
     speed: 5
   };
 
+  createCanvas(windowWidth, windowHeight);
+
   state = "play";
 }
-
-// ===== MAIN LOOP =====
 function draw(){
 
   background(0);
@@ -35,6 +43,15 @@ function draw(){
 
   applyShake();
 
+  if(hitStop > 0){
+    hitStop--;
+    return;
+  }
+
+  game();
+}
+function game(){
+
   movePlayer();
   drawPlayer();
 
@@ -42,17 +59,14 @@ function draw(){
   updateEnemies();
 
   updateBullets();
+  updateParticles();
 
   drawUI();
 
   if(hp <= 0){
     state = "gameover";
-    alert("GAME OVER! Score: " + score);
-    location.reload();
   }
 }
-
-// ===== PLAYER =====
 function movePlayer(){
 
   if(keyIsDown(65)) player.x -= player.speed;
@@ -65,18 +79,17 @@ function drawPlayer(){
   fill(0,255,255);
   circle(player.x, player.y, 25);
 }
-
-// ===== ENEMIES =====
 function spawnEnemies(){
-  if(frameCount % 40 === 0){
+
+  if(frameCount % 30 === 0){
+
     enemies.push({
       x: random(width),
       y: 0,
-      speed: 2
+      speed: 1 + score * 0.01
     });
   }
 }
-
 function updateEnemies(){
 
   for(let e of enemies){
@@ -88,17 +101,15 @@ function updateEnemies(){
     e.x += dx/d * e.speed;
     e.y += dy/d * e.speed;
 
-    fill(0,255,0);
+    fill(0,255,100);
     circle(e.x, e.y, 25);
 
     if(dist(e.x,e.y,player.x,player.y) < 20){
       hp -= 1;
-      shake = 5;
+      shake = 4;
     }
   }
 }
-
-// ===== SHOOT =====
 function mousePressed(){
 
   if(state !== "play") return;
@@ -112,8 +123,6 @@ function mousePressed(){
     dy: sin(a)*12
   });
 }
-
-// ===== BULLETS =====
 function updateBullets(){
 
   for(let i=bullets.length-1;i>=0;i--){
@@ -130,26 +139,54 @@ function updateBullets(){
 
       if(dist(b.x,b.y,enemies[j].x,enemies[j].y)<20){
 
+        spawnParticles(enemies[j].x, enemies[j].y);
+
         enemies.splice(j,1);
         bullets.splice(i,1);
 
         score++;
-        shake = 3;
+
+        shake = 4;
+        hitStop = 2; // 🔥 產品級手感
 
         break;
       }
     }
   }
 }
+function spawnParticles(x,y){
 
-// ===== UI =====
-function drawUI(){
-
-  document.getElementById("hp").innerText = "HP: " + hp;
-  document.getElementById("score").innerText = "Score: " + score;
+  for(let i=0;i<8;i++){
+    particles.push({
+      x:x,
+      y:y,
+      dx:random(-2,2),
+      dy:random(-2,2),
+      life:20
+    });
+  }
 }
 
-// ===== SHAKE =====
+function updateParticles(){
+
+  for(let p of particles){
+
+    p.x += p.dx;
+    p.y += p.dy;
+    p.life--;
+
+    fill(255,200,0,p.life*10);
+    circle(p.x,p.y,4);
+  }
+}
+function drawUI(){
+
+  fill(255);
+  textSize(18);
+
+  text("HP: " + hp, 20, 30);
+  text("Score: " + score, 20, 60);
+}
 function applyShake(){
 
   if(shake > 0){
@@ -157,8 +194,14 @@ function applyShake(){
     shake *= 0.85;
   }
 }
+function drawGameOver(){
 
-// ===== WINDOW =====
-function windowResized(){
-  resizeCanvas(windowWidth, windowHeight);
+  fill(255,0,0);
+  textAlign(CENTER);
+
+  textSize(50);
+  text("GAME OVER", width/2, height/2);
+
+  textSize(20);
+  text("Score: " + score, width/2, height/2+50);
 }

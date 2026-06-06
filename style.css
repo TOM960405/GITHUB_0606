@@ -6,26 +6,41 @@ body{
   color:#0ff;
 }
 
-#menu{
+/* Loading */
+#loading{
   position:absolute;
   width:100%;
   top:40%;
   text-align:center;
 }
 
-button{
-  padding:10px 20px;
-  font-size:20px;
-  background:black;
-  color:cyan;
-  border:1px solid cyan;
-  cursor:pointer;
+.title{
+  font-size:50px;
+  text-shadow:0 0 20px cyan;
 }
 
-#hud{
+#bar{
+  width:0%;
+  height:5px;
+  background:cyan;
+  margin-top:10px;
+  transition:1s;
+}
+
+/* Menu */
+#menu{
   position:absolute;
-  top:10px;
-  left:10px;
-  color:white;
+  width:100%;
+  top:40%;
+  text-align:center;
   display:none;
+}
+
+button{
+  padding:10px 20px;
+  font-size:18px;
+  border:1px solid cyan;
+  background:black;
+  color:cyan;
+  cursor:pointer;
 }
